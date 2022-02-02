@@ -5,6 +5,13 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+var (
+	statusMessageStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
+		Render
 )
 
 func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
@@ -57,8 +64,6 @@ type delegateKeyMap struct {
 	preview key.Binding
 }
 
-// Additional short help entries. This satisfies the help.KeyMap interface and
-// is entirely optional.
 func (d delegateKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		d.copy,
@@ -66,8 +71,6 @@ func (d delegateKeyMap) ShortHelp() []key.Binding {
 	}
 }
 
-// Additional full help entries. This satisfies the help.KeyMap interface and
-// is entirely optional.
 func (d delegateKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{

@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/hako/durafmt"
 )
 
@@ -22,6 +23,12 @@ func (p parameter) Title() string       { return p.title }
 func (p parameter) Name() string        { return p.name }
 func (p parameter) Description() string { return p.description }
 func (p parameter) FilterValue() string { return p.name }
+
+var (
+	lastEditedStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#9BA92F", Dark: "#9BA92F"}).
+		Render
+)
 
 func listParameters() []list.Item {
 	opts := ssm.DescribeParametersInput{
@@ -50,14 +57,14 @@ func NewParameterItem(param types.ParameterMetadata) parameter {
 	var (
 		name        = *param.Name
 		title       string
-		description string
+		description = ""
+		lastEdited  = fmt.Sprintf("(Modified: %s ago)", durafmt.ParseShort(time.Since(*param.LastModifiedDate)))
 	)
 
-	description = fmt.Sprintf("[Modified: %s ago]", durafmt.ParseShort(time.Since(*param.LastModifiedDate)))
 	if param.Description != nil {
-		description += "\n"
-		description += *param.Description
+		description = *param.Description + " "
 	}
+	description += lastEditedStyle(lastEdited)
 
 	if param.Type == "SecureString" {
 		title = fmt.Sprintf(" %s", name)

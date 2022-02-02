@@ -15,11 +15,10 @@ import (
 )
 
 var (
-	appStyle = lipgloss.NewStyle().Padding(1, 2)
-
+	appStyle   = lipgloss.NewStyle().Padding(1, 2)
 	titleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFDF5")).
-			Background(lipgloss.Color("#25A065")).
+			Background(lipgloss.Color("#036B46")).
 			Padding(0, 1)
 
 	SSMClient *ssm.Client
@@ -45,7 +44,7 @@ func newModel() model {
 
 	delegate := newItemDelegate(delegateKeys)
 	parameterList := list.New(items, delegate, 0, 0)
-	parameterList.Title = "SSM"
+	parameterList.Title = "AWS SSM"
 	parameterList.Styles.Title = titleStyle
 	parameterList.StatusMessageLifetime = time.Second * 5
 

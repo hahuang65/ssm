@@ -10,8 +10,12 @@ import (
 
 var (
 	statusMessageStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
-		Render
+				Foreground(lipgloss.AdaptiveColor{Light: "#036B46", Dark: "#036B46"}).
+				Render
+
+	valuePreviewStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
+				Render
 )
 
 func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
@@ -35,11 +39,11 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 			case key.Matches(msg, keys.copy):
 				value = GetParameterValue(name)
 				clipboard.WriteAll(value)
-				return m.NewStatusMessage(statusMessageStyle("Copied `" + value + "` to clipboard"))
+				return m.NewStatusMessage(statusMessageStyle("Copied ") + valuePreviewStyle(value) + statusMessageStyle(" to clipboard"))
 
 			case key.Matches(msg, keys.preview):
 				value = GetParameterValue(name)
-				return m.NewStatusMessage(statusMessageStyle("Preview: " + value))
+				return m.NewStatusMessage(statusMessageStyle("Peeking at ") + valuePreviewStyle(value))
 			}
 		}
 

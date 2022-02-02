@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,10 +11,13 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
-		var title string
+		var (
+			name  string
+			value string
+		)
 
 		if i, ok := m.SelectedItem().(parameter); ok {
-			title = i.Title()
+			name = i.Name()
 		} else {
 			return nil
 		}
@@ -21,18 +25,21 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {
-			case key.Matches(msg, keys.choose):
-				return m.NewStatusMessage(statusMessageStyle("You chose " + title))
+			case key.Matches(msg, keys.copy):
+				value = GetParameterValue(name)
+				clipboard.WriteAll(value)
+				return m.NewStatusMessage(statusMessageStyle("Copied `" + value + "` to clipboard"))
 
 			case key.Matches(msg, keys.preview):
-				return m.NewStatusMessage(statusMessageStyle("Preview " + title))
+				value = GetParameterValue(name)
+				return m.NewStatusMessage(statusMessageStyle("Preview: " + value))
 			}
 		}
 
 		return nil
 	}
 
-	help := []key.Binding{keys.choose, keys.preview}
+	help := []key.Binding{keys.copy, keys.preview}
 
 	d.ShortHelpFunc = func() []key.Binding {
 		return help
@@ -46,7 +53,7 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 }
 
 type delegateKeyMap struct {
-	choose  key.Binding
+	copy    key.Binding
 	preview key.Binding
 }
 
@@ -54,7 +61,7 @@ type delegateKeyMap struct {
 // is entirely optional.
 func (d delegateKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
-		d.choose,
+		d.copy,
 		d.preview,
 	}
 }
@@ -64,7 +71,7 @@ func (d delegateKeyMap) ShortHelp() []key.Binding {
 func (d delegateKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{
-			d.choose,
+			d.copy,
 			d.preview,
 		},
 	}
@@ -72,9 +79,9 @@ func (d delegateKeyMap) FullHelp() [][]key.Binding {
 
 func newDelegateKeyMap() *delegateKeyMap {
 	return &delegateKeyMap{
-		choose: key.NewBinding(
+		copy: key.NewBinding(
 			key.WithKeys("enter"),
-			key.WithHelp("enter", "choose"),
+			key.WithHelp("enter", "copy value"),
 		),
 		preview: key.NewBinding(
 			key.WithKeys(" "),

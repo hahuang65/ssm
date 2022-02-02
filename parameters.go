@@ -13,20 +13,23 @@ import (
 )
 
 type parameter struct {
-	title, desc string
+	description string
+	name        string
+	title       string
 }
 
 func (p parameter) Title() string       { return p.title }
-func (p parameter) Description() string { return p.desc }
-func (p parameter) FilterValue() string { return p.title }
+func (p parameter) Name() string        { return p.name }
+func (p parameter) Description() string { return p.description }
+func (p parameter) FilterValue() string { return p.name }
 
-func listParameters(s *ssm.Client) []list.Item {
+func listParameters() []list.Item {
 	opts := ssm.DescribeParametersInput{
 		MaxResults: 50,
 	}
 	parameters := []list.Item{}
 
-	paginator := ssm.NewDescribeParametersPaginator(s, &opts)
+	paginator := ssm.NewDescribeParametersPaginator(SSMClient, &opts)
 
 	for paginator.HasMorePages() {
 		res, err := paginator.NextPage(context.TODO())
@@ -44,16 +47,38 @@ func listParameters(s *ssm.Client) []list.Item {
 }
 
 func NewParameterItem(param types.ParameterMetadata) parameter {
-	description := fmt.Sprintf("[Modified: %s ago]", durafmt.ParseShort(time.Since(*param.LastModifiedDate)))
+	var (
+		name        = *param.Name
+		title       string
+		description string
+	)
+
+	description = fmt.Sprintf("[Modified: %s ago]", durafmt.ParseShort(time.Since(*param.LastModifiedDate)))
 	if param.Description != nil {
 		description += "\n"
 		description += *param.Description
 	}
-	name := ""
-	if param.Type == "SecureString" {
-		name += " "
-	}
-	name += *param.Name
 
-	return parameter{title: name, desc: description}
+	if param.Type == "SecureString" {
+		title = fmt.Sprintf(" %s", name)
+	} else {
+		title = name
+	}
+
+	return parameter{name: name, title: title, description: description}
+}
+
+func GetParameterValue(name string) string {
+	opts := ssm.GetParameterInput{
+		Name:           &name,
+		WithDecryption: true,
+	}
+
+	res, err := SSMClient.GetParameter(context.TODO(), &opts)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return *res.Parameter.Value
 }

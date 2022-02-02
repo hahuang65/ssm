@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
@@ -25,6 +26,8 @@ var (
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
 				Render
+
+	SSMClient *ssm.Client
 )
 
 type listKeyMap struct {
@@ -79,18 +82,18 @@ func newModel() model {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		log.Fatalf("unable to load AWS SDK config, %v", err)
 	}
+	SSMClient = ssm.NewFromConfig(cfg)
 
-	// Using the Config value, create the DynamoDB client
-	svc := ssm.NewFromConfig(cfg)
-	items := listParameters(svc)
+	items := listParameters()
 
 	// Setup list
 	delegate := newItemDelegate(delegateKeys)
 	parameterList := list.New(items, delegate, 0, 0)
 	parameterList.Title = "SSM"
 	parameterList.Styles.Title = titleStyle
+	parameterList.StatusMessageLifetime = time.Second * 5
 	parameterList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			// listKeys.toggleSpinner,

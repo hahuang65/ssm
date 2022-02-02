@@ -34,12 +34,6 @@ func newModel() model {
 		delegateKeys = newDelegateKeyMap()
 	)
 
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		log.Fatalf("unable to load AWS SDK config, %v", err)
-	}
-	SSMClient = ssm.NewFromConfig(cfg)
-
 	items := listParameters()
 
 	delegate := newItemDelegate(delegateKeys)
@@ -86,9 +80,19 @@ func (m model) View() string {
 }
 
 func main() {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Fatalf("unable to load AWS SDK config, %v", err)
+	}
+	SSMClient = ssm.NewFromConfig(cfg)
 
-	if err := tea.NewProgram(newModel()).Start(); err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
+	if len(os.Args[1:]) == 1 {
+		// If a single argument is passed in, try to get the value for that key
+		fmt.Println(GetParameterValue(os.Args[1]))
+	} else {
+		if err := tea.NewProgram(newModel()).Start(); err != nil {
+			fmt.Println("Error running program:", err)
+			os.Exit(1)
+		}
 	}
 }

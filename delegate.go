@@ -28,7 +28,7 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		)
 
 		if i, ok := m.SelectedItem().(parameter); ok {
-			name = i.Name()
+			name = i.name
 		} else {
 			return nil
 		}
@@ -37,18 +37,18 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		case tea.KeyMsg:
 			switch {
 			case key.Matches(msg, keys.copy):
-				return CopyParameter(name)
+				return copyParameter(name)
 
 			case key.Matches(msg, keys.preview):
-				return PeekParameter(name)
+				return peekParameter(name)
 			}
 
-		case CopyParameterMsg:
+		case copyParameterMsg:
 			value = string(msg)
 			clipboard.WriteAll(value)
 			return m.NewStatusMessage(statusMessageStyle("Copied ") + valuePreviewStyle(value) + statusMessageStyle(" to clipboard"))
 
-		case PeekParameterMsg:
+		case peekParameterMsg:
 			value = string(msg)
 			return m.NewStatusMessage(statusMessageStyle("Peeking at ") + valuePreviewStyle(value))
 		}

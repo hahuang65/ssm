@@ -20,11 +20,10 @@ type parameter struct {
 	title       string
 }
 
-type PeekParameterMsg string
-type CopyParameterMsg string
+type peekParameterMsg string
+type copyParameterMsg string
 
 func (p parameter) Title() string       { return p.title }
-func (p parameter) Name() string        { return p.name }
 func (p parameter) Description() string { return p.description }
 func (p parameter) FilterValue() string { return p.name }
 
@@ -50,14 +49,14 @@ func listParameters() []list.Item {
 		}
 
 		for _, param := range res.Parameters {
-			parameters = append(parameters, NewParameterItem(param))
+			parameters = append(parameters, newParameterItem(param))
 		}
 	}
 
 	return parameters
 }
 
-func NewParameterItem(param types.ParameterMetadata) parameter {
+func newParameterItem(param types.ParameterMetadata) parameter {
 	var (
 		name        = *param.Name
 		title       string
@@ -79,15 +78,15 @@ func NewParameterItem(param types.ParameterMetadata) parameter {
 	return parameter{name: name, title: title, description: description}
 }
 
-func PeekParameter(name string) tea.Cmd {
+func peekParameter(name string) tea.Cmd {
 	return func() tea.Msg {
-		return PeekParameterMsg(getParameterValue(name))
+		return peekParameterMsg(getParameterValue(name))
 	}
 }
 
-func CopyParameter(name string) tea.Cmd {
+func copyParameter(name string) tea.Cmd {
 	return func() tea.Msg {
-		return CopyParameterMsg(getParameterValue(name))
+		return copyParameterMsg(getParameterValue(name))
 	}
 }
 

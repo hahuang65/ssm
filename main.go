@@ -88,7 +88,7 @@ func main() {
 
 	if len(os.Args[1:]) == 1 {
 		// If a single argument is passed in, try to get the value for that key
-		fmt.Println(GetParameterValue(os.Args[1]))
+		fmt.Println(getParameterValue(os.Args[1]))
 	} else {
 		if err := tea.NewProgram(newModel()).Start(); err != nil {
 			fmt.Println("Error running program:", err)

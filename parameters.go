@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hako/durafmt"
 )
@@ -18,6 +19,9 @@ type parameter struct {
 	name        string
 	title       string
 }
+
+type PeekParameterMsg string
+type CopyParameterMsg string
 
 func (p parameter) Title() string       { return p.title }
 func (p parameter) Name() string        { return p.name }
@@ -75,7 +79,19 @@ func NewParameterItem(param types.ParameterMetadata) parameter {
 	return parameter{name: name, title: title, description: description}
 }
 
-func GetParameterValue(name string) string {
+func PeekParameter(name string) tea.Cmd {
+	return func() tea.Msg {
+		return PeekParameterMsg(getParameterValue(name))
+	}
+}
+
+func CopyParameter(name string) tea.Cmd {
+	return func() tea.Msg {
+		return CopyParameterMsg(getParameterValue(name))
+	}
+}
+
+func getParameterValue(name string) string {
 	opts := ssm.GetParameterInput{
 		Name:           &name,
 		WithDecryption: true,

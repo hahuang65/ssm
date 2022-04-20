@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -25,8 +26,10 @@ var (
 )
 
 type model struct {
-	list         list.Model
 	delegateKeys *delegateKeyMap
+	list         list.Model
+	loading      bool
+	spinner      spinner.Model
 }
 
 func newModel() model {
@@ -34,22 +37,26 @@ func newModel() model {
 		delegateKeys = newDelegateKeyMap()
 	)
 
-	items := listParameters()
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	delegate := newItemDelegate(delegateKeys)
-	parameterList := list.New(items, delegate, 0, 0)
-	parameterList.Title = "AWS SSM"
-	parameterList.Styles.Title = titleStyle
-	parameterList.StatusMessageLifetime = time.Second * 5
+	l := list.New([]list.Item{}, delegate, 0, 0)
+	l.Title = "AWS SSM"
+	l.Styles.Title = titleStyle
+	l.StatusMessageLifetime = time.Second * 5
 
 	return model{
-		list:         parameterList,
 		delegateKeys: delegateKeys,
+		list:         l,
+		loading:      true,
+		spinner:      s,
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.EnterAltScreen
+	return tea.Batch(m.spinner.Tick, listParameters)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -65,18 +72,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.list.FilterState() == list.Filtering {
 			break
 		}
+
+	case listParametersMsg:
+		m.list.SetItems(msg)
+		m.loading = false
+
+	case spinner.TickMsg:
+		if m.loading {
+			newSpinner, cmd := m.spinner.Update(msg)
+			m.spinner = newSpinner
+			cmds = append(cmds, cmd)
+		}
 	}
 
 	// This will also call our delegate's update function.
-	newListModel, cmd := m.list.Update(msg)
-	m.list = newListModel
+	newList, cmd := m.list.Update(msg)
+	m.list = newList
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m model) View() string {
-	return appStyle.Render(m.list.View())
+	if m.loading {
+		return fmt.Sprintf("\n\n   %s Loading SSM parameters\n\n", m.spinner.View())
+	} else {
+		return appStyle.Render(m.list.View())
+	}
 }
 
 func main() {
@@ -90,7 +112,7 @@ func main() {
 		// If a single argument is passed in, try to get the value for that key
 		fmt.Println(getParameterValue(os.Args[1]))
 	} else {
-		if err := tea.NewProgram(newModel()).Start(); err != nil {
+		if err := tea.NewProgram(newModel(), tea.WithAltScreen()).Start(); err != nil {
 			fmt.Println("Error running program:", err)
 			os.Exit(1)
 		}

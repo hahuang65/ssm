@@ -22,6 +22,7 @@ type parameter struct {
 
 type peekParameterMsg string
 type copyParameterMsg string
+type listParametersMsg []list.Item
 
 func (p parameter) Title() string       { return p.title }
 func (p parameter) Description() string { return p.description }
@@ -33,7 +34,7 @@ var (
 		Render
 )
 
-func listParameters() []list.Item {
+func listParameters() tea.Msg {
 	opts := ssm.DescribeParametersInput{
 		MaxResults: 50,
 	}
@@ -53,7 +54,7 @@ func listParameters() []list.Item {
 		}
 	}
 
-	return parameters
+	return listParametersMsg(parameters)
 }
 
 func newParameterItem(param types.ParameterMetadata) parameter {

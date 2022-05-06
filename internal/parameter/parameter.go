@@ -1,4 +1,4 @@
-package main
+package parameter
 
 import (
 	"context"
@@ -14,19 +14,23 @@ import (
 	"github.com/hako/durafmt"
 )
 
-type parameter struct {
+type Service struct {
+	SSMClient *ssm.Client
+}
+
+type Parameter struct {
 	description string
 	name        string
 	title       string
 }
 
-type peekParameterMsg string
-type copyParameterMsg string
-type listParametersMsg []list.Item
+type PeekMsg string
+type CopyMsg string
+type ListMsg []list.Item
 
-func (p parameter) Title() string       { return p.title }
-func (p parameter) Description() string { return p.description }
-func (p parameter) FilterValue() string { return p.name }
+func (p Parameter) Title() string       { return p.title }
+func (p Parameter) Description() string { return p.description }
+func (p Parameter) FilterValue() string { return p.name }
 
 var (
 	lastEditedStyle = lipgloss.NewStyle().
@@ -34,13 +38,13 @@ var (
 		Render
 )
 
-func listParameters() tea.Msg {
+func (s Service) List() tea.Msg {
 	opts := ssm.DescribeParametersInput{
 		MaxResults: 50,
 	}
 	parameters := []list.Item{}
 
-	paginator := ssm.NewDescribeParametersPaginator(SSMClient, &opts)
+	paginator := ssm.NewDescribeParametersPaginator(s.SSMClient, &opts)
 
 	for paginator.HasMorePages() {
 		res, err := paginator.NextPage(context.TODO())
@@ -50,14 +54,14 @@ func listParameters() tea.Msg {
 		}
 
 		for _, param := range res.Parameters {
-			parameters = append(parameters, newParameterItem(param))
+			parameters = append(parameters, new(param))
 		}
 	}
 
-	return listParametersMsg(parameters)
+	return ListMsg(parameters)
 }
 
-func newParameterItem(param types.ParameterMetadata) parameter {
+func new(param types.ParameterMetadata) Parameter {
 	var (
 		name        = *param.Name
 		title       string
@@ -76,28 +80,28 @@ func newParameterItem(param types.ParameterMetadata) parameter {
 		title = name
 	}
 
-	return parameter{name: name, title: title, description: description}
+	return Parameter{name: name, title: title, description: description}
 }
 
-func peekParameter(name string) tea.Cmd {
+func (s Service) Peek(name string) tea.Cmd {
 	return func() tea.Msg {
-		return peekParameterMsg(getParameterValue(name))
+		return PeekMsg(s.Value(name))
 	}
 }
 
-func copyParameter(name string) tea.Cmd {
+func (s Service) Copy(name string) tea.Cmd {
 	return func() tea.Msg {
-		return copyParameterMsg(getParameterValue(name))
+		return CopyMsg(s.Value(name))
 	}
 }
 
-func getParameterValue(name string) string {
+func (s Service) Value(name string) string {
 	opts := ssm.GetParameterInput{
 		Name:           &name,
 		WithDecryption: true,
 	}
 
-	res, err := SSMClient.GetParameter(context.TODO(), &opts)
+	res, err := s.SSMClient.GetParameter(context.TODO(), &opts)
 
 	if err != nil {
 		log.Fatal(err)

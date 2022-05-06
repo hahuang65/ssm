@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"git.sr.ht/~hwrd/ssm/internal/parameter"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/charmbracelet/bubbles/list"
@@ -21,18 +22,17 @@ var (
 			Foreground(lipgloss.Color("#FFFDF5")).
 			Background(lipgloss.Color("#036B46")).
 			Padding(0, 1)
-
-	SSMClient *ssm.Client
 )
 
 type model struct {
-	delegateKeys *delegateKeyMap
-	list         list.Model
-	loading      bool
-	spinner      spinner.Model
+	delegateKeys     *delegateKeyMap
+	list             list.Model
+	loading          bool
+	spinner          spinner.Model
+	parameterService parameter.Service
 }
 
-func newModel() model {
+func newModel(ps parameter.Service) model {
 	var (
 		delegateKeys = newDelegateKeyMap()
 	)
@@ -41,22 +41,23 @@ func newModel() model {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
-	delegate := newItemDelegate(delegateKeys)
+	delegate := newItemDelegate(delegateKeys, ps)
 	l := list.New([]list.Item{}, delegate, 0, 0)
 	l.Title = "AWS SSM"
 	l.Styles.Title = titleStyle
 	l.StatusMessageLifetime = time.Second * 5
 
 	return model{
-		delegateKeys: delegateKeys,
-		list:         l,
-		loading:      true,
-		spinner:      s,
+		delegateKeys:     delegateKeys,
+		list:             l,
+		loading:          true,
+		spinner:          s,
+		parameterService: ps,
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, listParameters)
+	return tea.Batch(m.spinner.Tick, m.parameterService.List)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -73,7 +74,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 
-	case listParametersMsg:
+	case parameter.ListMsg:
 		m.list.SetItems(msg)
 		m.loading = false
 
@@ -106,13 +107,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to load AWS SDK config, %v", err)
 	}
-	SSMClient = ssm.NewFromConfig(cfg)
+	ssmClient := ssm.NewFromConfig(cfg)
+	p := parameter.Service{SSMClient: ssmClient}
 
 	if len(os.Args[1:]) == 1 {
 		// If a single argument is passed in, try to get the value for that key
-		fmt.Println(getParameterValue(os.Args[1]))
+		fmt.Println(p.Value(os.Args[1]))
 	} else {
-		if err := tea.NewProgram(newModel(), tea.WithAltScreen()).Start(); err != nil {
+		if err := tea.NewProgram(newModel(p), tea.WithAltScreen()).Start(); err != nil {
 			fmt.Println("Error running program:", err)
 			os.Exit(1)
 		}

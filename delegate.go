@@ -1,6 +1,7 @@
 package main
 
 import (
+	"git.sr.ht/~hwrd/ssm/internal/parameter"
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -18,7 +19,7 @@ var (
 				Render
 )
 
-func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
+func newItemDelegate(keys *delegateKeyMap, p parameter.Service) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
@@ -27,8 +28,8 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 			value string
 		)
 
-		if i, ok := m.SelectedItem().(parameter); ok {
-			name = i.name
+		if i, ok := m.SelectedItem().(parameter.Parameter); ok {
+			name = i.Title()
 		} else {
 			return nil
 		}
@@ -37,18 +38,18 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		case tea.KeyMsg:
 			switch {
 			case key.Matches(msg, keys.copy):
-				return copyParameter(name)
+				return p.Copy(name)
 
 			case key.Matches(msg, keys.preview):
-				return peekParameter(name)
+				return p.Peek(name)
 			}
 
-		case copyParameterMsg:
+		case parameter.CopyMsg:
 			value = string(msg)
 			clipboard.WriteAll(value)
 			return m.NewStatusMessage(statusMessageStyle("Copied ") + valuePreviewStyle(value) + statusMessageStyle(" to clipboard"))
 
-		case peekParameterMsg:
+		case parameter.PeekMsg:
 			value = string(msg)
 			return m.NewStatusMessage(statusMessageStyle("Peeking at ") + valuePreviewStyle(value))
 		}

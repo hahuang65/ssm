@@ -29,7 +29,7 @@ func newItemDelegate(keys *delegateKeyMap, p parameter.Service) list.DefaultDele
 		)
 
 		if i, ok := m.SelectedItem().(parameter.Parameter); ok {
-			name = i.Title()
+			name = i.FilterValue()
 		} else {
 			return nil
 		}

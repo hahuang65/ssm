@@ -110,7 +110,7 @@ func TestService(t *testing.T) {
 
 		parameterMap := make(map[string]string)
 		for _, p := range res {
-			parameterMap[*p.Name] = *p.Value
+			parameterMap[p.Key] = p.Value
 		}
 
 		for i := 0; i < count; i++ {

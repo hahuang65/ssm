@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	ssm "github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -16,6 +17,14 @@ type Service struct {
 type ParameterNotFound struct {
 	name string
 	Err  error
+}
+
+type Parameter struct {
+	Description  string
+	Key          string
+	Value        string
+	Type         types.ParameterType
+	LastModified *time.Time
 }
 
 func (e ParameterNotFound) Error() string {
@@ -45,38 +54,58 @@ func (s Service) Get(key string) (string, error) {
 	return *res.Parameter.Value, nil
 }
 
-func (s Service) List() ([]types.Parameter, error) {
+func (s Service) List() ([]Parameter, error) {
 	descOpts := ssm.DescribeParametersInput{
 		MaxResults: 10,
 	}
-	ret := []types.Parameter{}
+	ret := []Parameter{}
 
 	paginator := ssm.NewDescribeParametersPaginator(s.client, &descOpts)
 	for paginator.HasMorePages() {
-		parameterNames := []string{}
-
-		pageRes, err := paginator.NextPage(context.TODO())
+		page, err := paginator.NextPage(context.TODO())
 		if err != nil {
-			return []types.Parameter{}, err
+			return []Parameter{}, err
 		}
 
-		for _, param := range pageRes.Parameters {
-			parameterNames = append(parameterNames, *param.Name)
-		}
+		params, err := s.parametersFromPage(page)
+		ret = append(ret, params...)
+	}
 
-		getOpts := ssm.GetParametersInput{
-			Names:          parameterNames,
-			WithDecryption: true,
-		}
+	return ret, nil
+}
 
-		getRes, err := s.client.GetParameters(context.TODO(), &getOpts)
-		if err != nil {
-			return []types.Parameter{}, err
-		}
+func (s Service) parametersFromPage(page *ssm.DescribeParametersOutput) ([]Parameter, error) {
+	ret := []Parameter{}
+	names := []string{}
+	descriptions := make(map[string]string)
 
-		for _, param := range getRes.Parameters {
-			ret = append(ret, param)
+	for _, p := range page.Parameters {
+		names = append(names, *p.Name)
+		description := ""
+		if p.Description != nil {
+			description = *p.Description
 		}
+		descriptions[*p.Name] = description
+	}
+
+	getOpts := ssm.GetParametersInput{
+		Names:          names,
+		WithDecryption: true,
+	}
+
+	res, err := s.client.GetParameters(context.TODO(), &getOpts)
+	if err != nil {
+		return []Parameter{}, err
+	}
+
+	for _, p := range res.Parameters {
+		ret = append(ret, Parameter{
+			Key:          *p.Name,
+			Value:        *p.Value,
+			Description:  descriptions[*p.Name],
+			Type:         p.Type,
+			LastModified: p.LastModifiedDate,
+		})
 	}
 
 	return ret, nil

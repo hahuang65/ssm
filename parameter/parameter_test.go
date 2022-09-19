@@ -92,4 +92,32 @@ func TestService(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("List", func(t *testing.T) {
+		keyPrefix := "foo"
+		valPrefix := "bar"
+		count := 100
+		for i := 0; i < count; i++ {
+			key := fmt.Sprintf("%s%d", keyPrefix, i)
+			val := fmt.Sprintf("%s%d", valPrefix, i)
+			putParameter(t, key, val, true)
+		}
+
+		res, err := ps.List()
+		if err != nil {
+			t.Fatalf("Could not run `ps.List()`: %v", err)
+		}
+
+		parameterMap := make(map[string]string)
+		for _, p := range res {
+			parameterMap[*p.Name] = *p.Value
+		}
+
+		for i := 0; i < count; i++ {
+			key := fmt.Sprintf("%s%d", keyPrefix, i)
+			val := fmt.Sprintf("%s%d", valPrefix, i)
+			assert.Contains(t, parameterMap, fmt.Sprintf("foo%d", i))
+			assert.Equal(t, parameterMap[key], val)
+		}
+	})
 }

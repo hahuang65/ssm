@@ -1,0 +1,29 @@
+image: alpine/edge
+packages:
+- git
+tasks:
+- install-asdf: |
+    git clone https://github.com/asdf-vm/asdf.git ~/.asdf
+    source $HOME/.asdf/asdf.sh
+    source $HOME/.asdf/completions/asdf.bash
+
+- install-go: |
+    export PATH=$PATH:$HOME/.asdf/bin
+    REPO=$(ls -1 | head -1)
+    cd "$REPO"
+    GOVERSION=$(grep ^go go.mod | sed s/go/golang/)
+    asdf plugin-add golang https://github.com/kennyp/asdf-golang.git
+    echo "Installing $GOVERSION..."
+    asdf install $GOVERSION
+    touch .tool-versions
+    asdf local $GOVERSION
+
+- test: |
+    REPO=$(ls -1 | head -1)
+    cd "$REPO"
+    GODIR=$(grep ^go go.mod | sed s/go/golang/ | sed -e "s/ /\//")
+    GOINSTALL="$HOME/.asdf/installs/$GODIR"
+    export GOROOT=$GOINSTALL/go
+    export PATH=$PATH:$GOROOT/bin
+    export GOPATH=$GOINSTALL/packages
+    go test ./...

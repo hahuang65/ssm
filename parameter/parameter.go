@@ -36,9 +36,10 @@ func NewService(c *ssm.Client) Service {
 }
 
 func (s Service) Get(key string) (string, error) {
+	withDecryption := true
 	opts := ssm.GetParameterInput{
 		Name:           &key,
-		WithDecryption: true,
+		WithDecryption: &withDecryption,
 	}
 
 	res, err := s.client.GetParameter(context.TODO(), &opts)
@@ -55,8 +56,9 @@ func (s Service) Get(key string) (string, error) {
 }
 
 func (s Service) List() ([]Parameter, error) {
+	maxResults := int32(10)
 	descOpts := ssm.DescribeParametersInput{
-		MaxResults: 10,
+		MaxResults: &maxResults,
 	}
 	ret := []Parameter{}
 
@@ -88,9 +90,10 @@ func (s Service) parametersFromPage(page *ssm.DescribeParametersOutput) ([]Param
 		descriptions[*p.Name] = description
 	}
 
+	withDecryption := true
 	getOpts := ssm.GetParametersInput{
 		Names:          names,
-		WithDecryption: true,
+		WithDecryption: &withDecryption,
 	}
 
 	res, err := s.client.GetParameters(context.TODO(), &getOpts)

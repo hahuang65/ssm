@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"git.sr.ht/~hwrd/ssm/parameter"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/stretchr/testify/assert"
+
+	"git.sr.ht/~hwrd/ssm/parameter"
 
 	tu "git.sr.ht/~hwrd/ssm/internal/testutils"
 )
@@ -34,11 +35,12 @@ func putParameter(t *testing.T, key string, value string, encrypted bool) {
 		pt = types.ParameterTypeSecureString
 	}
 
+	overwrite := true
 	_, err := tu.SSMClient(t).PutParameter(context.TODO(), &ssm.PutParameterInput{
 		Name:      &key,
 		Value:     &value,
 		Type:      pt,
-		Overwrite: true, // In tests, we shouldn't error out if a key already exists.
+		Overwrite: &overwrite, // In tests, we shouldn't error out if a key already exists.
 	})
 	if err != nil {
 		t.Fatalf("Cannot put parameter %q => %q: %v", key, value, err)

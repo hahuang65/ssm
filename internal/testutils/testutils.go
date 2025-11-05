@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/google/uuid"
 
-	tc "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func DockerComposeUp(t *testing.T) {
@@ -19,16 +19,21 @@ func DockerComposeUp(t *testing.T) {
 
 	composeFilePaths := []string{"../docker-compose.yml"}
 	identifier := strings.ToLower(uuid.New().String())
-	compose := tc.NewLocalDockerCompose(composeFilePaths, identifier)
-	err := compose.
-		WithCommand([]string{"up", "-d"}).
-		Invoke().Error
+	composeStack, err := compose.NewDockerComposeWith(
+		compose.StackIdentifier(identifier),
+		compose.WithStackFiles(composeFilePaths...),
+	)
+	if err != nil {
+		t.Fatalf("Could not create compose: %v", err)
+	}
+
+	err = composeStack.Up(context.Background())
 	if err != nil {
 		t.Fatalf("Could not run compose file: %v - %v", composeFilePaths, err)
 	}
 
 	t.Cleanup(func() {
-		err := compose.Down().Error
+		err := composeStack.Down(context.Background())
 		if err != nil {
 			t.Errorf("Could not stop services from compose file: %v - %v", composeFilePaths, err)
 		}

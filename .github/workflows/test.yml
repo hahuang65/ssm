@@ -17,12 +17,24 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Verify formatting
+      - name: Install formatters
         run: |
-          unformatted=$(gofmt -l .)
-          if [ -n "$unformatted" ]; then
-            echo "::error::gofmt needs to be run on:"
-            echo "$unformatted"
+          go install mvdan.cc/gofumpt@v0.7.0
+          go install golang.org/x/tools/cmd/goimports@latest
+          go install github.com/daixiang0/gci@v0.13.5
+      - name: Verify formatting
+        # Order matters: gofumpt first, then goimports adds missing imports,
+        # then gci groups them. Any drift fails the job via git diff.
+        run: |
+          gofumpt -w .
+          goimports -w -local github.com/hahuang65/ssm .
+          gci write --skip-generated \
+            -s standard \
+            -s default \
+            -s 'prefix(github.com/hahuang65/ssm)' \
+            .
+          if ! git diff --exit-code; then
+            echo "::error::Formatting drift. Run gofumpt, goimports, then gci locally."
             exit 1
           fi
       - name: Vet

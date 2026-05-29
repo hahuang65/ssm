@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.sr.ht/~hwrd/ssm/parameter"
+	"github.com/hahuang65/ssm/parameter"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hako/durafmt"

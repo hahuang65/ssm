@@ -10,9 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/smithy-go"
 
-	"git.sr.ht/~hwrd/ssm/errs"
-	"git.sr.ht/~hwrd/ssm/parameter"
-	"git.sr.ht/~hwrd/ssm/tui"
+	"github.com/hahuang65/ssm/errs"
+	"github.com/hahuang65/ssm/parameter"
+	"github.com/hahuang65/ssm/tui"
 )
 
 // errCredentialsExpired tags errors from SSM that are caused by missing,

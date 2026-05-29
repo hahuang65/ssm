@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"git.sr.ht/~hwrd/ssm/errs"
+	"github.com/hahuang65/ssm/errs"
 )
 
 var (

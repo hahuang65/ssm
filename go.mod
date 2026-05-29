@@ -1,4 +1,4 @@
-module git.sr.ht/~hwrd/ssm
+module github.com/hahuang65/ssm
 
 go 1.25.5
 

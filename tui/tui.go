@@ -26,12 +26,15 @@ var (
 				Render
 )
 
+type errMsg struct{ err error }
+
 type model struct {
 	delegateKeys     *delegateKeyMap
 	list             list.Model
 	loading          bool
 	spinner          spinner.Model
 	parameterService parameter.Service
+	err              error
 }
 
 func newModel(p parameter.Service) model {
@@ -73,6 +76,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 
+	case errMsg:
+		m.err = msg.err
+		return m, tea.Quit
+
 	case ListMsg:
 		m.list.SetItems(msg)
 		m.loading = false
@@ -102,5 +109,12 @@ func (m model) View() string {
 }
 
 func Start(p parameter.Service) error {
-	return tea.NewProgram(newModel(p), tea.WithAltScreen()).Start()
+	final, err := tea.NewProgram(newModel(p), tea.WithAltScreen()).Run()
+	if err != nil {
+		return err
+	}
+	if m, ok := final.(model); ok && m.err != nil {
+		return m.err
+	}
+	return nil
 }

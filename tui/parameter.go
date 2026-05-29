@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"git.sr.ht/~hwrd/ssm/parameter"
@@ -35,13 +34,12 @@ func (p ParameterItem) FilterValue() string { return p.param.Key }
 func (p ParameterItem) Value() string       { return p.param.Value }
 
 func (m model) listParameters() tea.Msg {
-	items := []list.Item{}
-
 	params, err := m.parameterService.List()
 	if err != nil {
-		log.Fatalf("Could not list parameters from SSM: %v", err)
+		return errMsg{err}
 	}
 
+	items := make([]list.Item, 0, len(params))
 	for _, p := range params {
 		items = append(items, ParameterItem{param: p})
 	}

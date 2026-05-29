@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hahuang65/ssm/parameter"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/hahuang65/ssm/parameter"
 )
 
 var (

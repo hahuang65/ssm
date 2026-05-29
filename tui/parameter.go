@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hahuang65/ssm/parameter"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hako/durafmt"
+
+	"github.com/hahuang65/ssm/parameter"
 )
 
 type ListMsg []list.Item

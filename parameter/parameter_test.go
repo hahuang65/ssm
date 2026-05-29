@@ -11,9 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/hahuang65/ssm/parameter"
-
 	tu "github.com/hahuang65/ssm/internal/testutils"
+	"github.com/hahuang65/ssm/parameter"
 )
 
 func parameterService(t *testing.T) parameter.Service {

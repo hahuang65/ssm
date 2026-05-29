@@ -11,9 +11,7 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
-		var (
-			value string
-		)
+		var value string
 
 		if i, ok := m.SelectedItem().(ParameterItem); ok {
 			value = i.Value()

@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/google/uuid"
-
 	"github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
@@ -58,7 +57,8 @@ func LocalstackConfig(t *testing.T) aws.Config {
 
 	credentials := credentials.NewStaticCredentialsProvider("test", "test", "")
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
 		config.WithRegion(region),
 		config.WithEndpointResolver(resolver),
 		config.WithCredentialsProvider(credentials),

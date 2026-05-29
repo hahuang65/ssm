@@ -2,21 +2,67 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"os"
 
 	awscfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/smithy-go"
 
+	"git.sr.ht/~hwrd/ssm/errs"
 	"git.sr.ht/~hwrd/ssm/parameter"
 	"git.sr.ht/~hwrd/ssm/tui"
 )
 
+// errCredentialsExpired tags errors from SSM that are caused by missing,
+// expired, or otherwise unusable AWS credentials.
+var errCredentialsExpired = errors.New("AWS credentials are expired or invalid")
+
+// errorMapper holds every translation from a low-level error to a
+// user-facing hint. Add a new mapping rather than threading bespoke
+// detection through call sites.
+var errorMapper = errs.New(
+	errs.Mapping{
+		Sentinel: errCredentialsExpired,
+		Match: smithyAPICode(
+			"ExpiredToken",
+			"ExpiredTokenException",
+			"InvalidClientTokenId",
+			"UnrecognizedClientException",
+			"MissingAuthenticationTokenException",
+			"AuthFailure",
+		),
+		Message: "Your AWS credentials are expired or invalid. Refresh them and try again.",
+	},
+)
+
+// smithyAPICode returns a matcher that fires when an error's chain contains
+// a smithy.APIError whose code is in codes.
+func smithyAPICode(codes ...string) func(error) bool {
+	set := make(map[string]struct{}, len(codes))
+	for _, c := range codes {
+		set[c] = struct{}{}
+	}
+	return func(err error) bool {
+		var ae smithy.APIError
+		if !errors.As(err, &ae) {
+			return false
+		}
+		_, ok := set[ae.ErrorCode()]
+		return ok
+	}
+}
+
+func fail(err error) {
+	fmt.Fprintln(os.Stderr, errorMapper.Message(err))
+	os.Exit(1)
+}
+
 func main() {
 	c, err := awscfg.LoadDefaultConfig(context.Background())
 	if err != nil {
-		log.Fatalf("Unable to load AWS config: %v", err)
+		fail(fmt.Errorf("unable to load AWS config: %w", err))
 	}
 
 	s := ssm.NewFromConfig(c)
@@ -27,14 +73,14 @@ func main() {
 		key := os.Args[1]
 		val, err := p.Get(key)
 		if err != nil {
-			log.Fatalf("Could not get %q: %v", key, err)
+			fail(fmt.Errorf("could not get %q: %w", key, err))
 		}
 
 		fmt.Println(val)
 	} else {
 		err := tui.Start(p)
 		if err != nil {
-			log.Fatalf("Could not start TUI: %v", err)
+			fail(err)
 		}
 	}
 }

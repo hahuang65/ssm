@@ -47,9 +47,8 @@ func (s Service) Get(key string) (string, error) {
 		var pnf *types.ParameterNotFound
 		if errors.As(err, &pnf) {
 			return "", ParameterNotFound{name: key, Err: err}
-		} else {
-			return "", err
 		}
+		return "", err
 	}
 
 	return *res.Parameter.Value, nil
@@ -66,10 +65,13 @@ func (s Service) List() ([]Parameter, error) {
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
 		if err != nil {
-			return []Parameter{}, err
+			return nil, err
 		}
 
 		params, err := s.parametersFromPage(page)
+		if err != nil {
+			return nil, err
+		}
 		ret = append(ret, params...)
 	}
 
@@ -98,7 +100,7 @@ func (s Service) parametersFromPage(page *ssm.DescribeParametersOutput) ([]Param
 
 	res, err := s.client.GetParameters(context.TODO(), &getOpts)
 	if err != nil {
-		return []Parameter{}, err
+		return nil, err
 	}
 
 	for _, p := range res.Parameters {

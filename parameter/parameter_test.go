@@ -1,3 +1,5 @@
+//go:build integration
+
 package parameter_test
 
 import (
